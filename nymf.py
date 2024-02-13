@@ -1,57 +1,66 @@
-import os
-
 import streamlit as st
-from dotenv import load_dotenv
-import google.generativeai as gen_ai
+import google.generativeai as genai
+import time
+import random
 
-
-# Load environment variables
-load_dotenv()
-
-# Configure Streamlit page settings
 st.set_page_config(
-    page_title="Chat with Gemini-Pro!",
-    page_icon=":brain:",  # Favicon emoji
-    layout="centered",  # Page layout option
+    page_title="Chat with Gemini Pro",
+    page_icon="🔥"
 )
 
-GOOGLE_API_KEY = os.getenv(AIzaSyDbH0QGRlBXMbzZ-NQHaecRv3JS91yGnPg)
+st.title("Chat with Gemini Pro")
+st.caption("A Chatbot Powered by Google Gemini Pro")
 
-# Set up Google Gemini-Pro AI model
-gen_ai.configure(api_key=GOOGLE_API_KEY)
-model = gen_ai.GenerativeModel('gemini-pro')
+if "app_key" not in st.session_state:
+    app_key = st.text_input("Please enter your Gemini API Key", type='password')
+    if app_key:
+        st.session_state.app_key = app_key
 
+if "history" not in st.session_state:
+    st.session_state.history = []
 
-# Function to translate roles between Gemini-Pro and Streamlit terminology
-def translate_role_for_streamlit(user_role):
-    if user_role == "model":
-        return "assistant"
-    else:
-        return user_role
+try:
+    genai.configure(api_key = st.session_state.app_key)
+except AttributeError as e:
+    st.warning("Please Put Your Gemini API Key First")
 
+model = genai.GenerativeModel("gemini-pro")
+chat = model.start_chat(history = st.session_state.history)
 
-# Initialize chat session in Streamlit if not already present
-if "chat_session" not in st.session_state:
-    st.session_state.chat_session = model.start_chat(history=[])
+with st.sidebar:
+    if st.button("Clear Chat Window", use_container_width=True, type="primary"):
+        st.session_state.history = []
+        st.rerun()
 
-
-# Display the chatbot's title on the page
-st.title("🤖 Gemini Pro - ChatBot")
-
-# Display the chat history
-for message in st.session_state.chat_session.history:
-    with st.chat_message(translate_role_for_streamlit(message.role)):
+for message in chat.history:
+    role ="assistant" if message.role == 'model' else message.role
+    with st.chat_message(role):
         st.markdown(message.parts[0].text)
 
-# Input field for user's message
-user_prompt = st.chat_input("Ask Gemini-Pro...")
-if user_prompt:
-    # Add user's message to chat and display it
-    st.chat_message("user").markdown(user_prompt)
-
-    # Send user's message to Gemini-Pro and get the response
-    gemini_response = st.session_state.chat_session.send_message(user_prompt)
-
-    # Display Gemini-Pro's response
-    with st.chat_message("assistant"):
-        st.markdown(gemini_response.text)
+if "app_key" in st.session_state:
+    if prompt := st.chat_input(""):
+        prompt = prompt.replace('\n', ' \n')
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            message_placeholder.markdown("Thinking...")
+            try:
+                full_response = ""
+                for chunk in chat.send_message(prompt, stream=True):
+                    word_count = 0
+                    random_int = random.randint(5,10)
+                    for word in chunk.text:
+                        full_response+=word
+                        word_count+=1
+                        if word_count == random_int:
+                            time.sleep(0.05)
+                            message_placeholder.markdown(full_response + "_")
+                            word_count = 0
+                            random_int = random.randint(5,10)
+                message_placeholder.markdown(full_response)
+            except genai.types.generation_types.BlockedPromptException as e:
+                st.exception(e)
+            except Exception as e:
+                st.exception(e)
+            st.session_state.history = chat.history
