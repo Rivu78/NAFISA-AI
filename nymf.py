@@ -48,7 +48,7 @@ if "app_key" in st.session_state:
             try:
                 full_response = ""
                 for chunk in chat.send_message(prompt, stream=True):
-                    word_count = 0
+                    word_count = 6000
                     random_int = random.randint(5,10)
                     for word in chunk.text:
                         full_response+=word
