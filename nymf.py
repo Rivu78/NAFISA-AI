@@ -4,15 +4,15 @@ import time
 import random
 
 st.set_page_config(
-    page_title="Chat with Gemini Pro",
-    page_icon="🔥"
+    page_title="Chat with NAFISA AI",
+    page_icon="🧚🏻‍♀"
 )
 
-st.title("Chat with Gemini Pro")
-st.caption("A Chatbot Powered by Google Gemini Pro")
+st.title("Chat with NAFISA AI")
+st.caption("Personalised assistants for research and Beyond")
 
 if "app_key" not in st.session_state:
-    app_key = st.text_input("Please enter your Gemini API Key", type='password')
+    app_key = st.text_input("Please enter your AI API Key", type='password')
     if app_key:
         st.session_state.app_key = app_key
 
@@ -22,7 +22,7 @@ if "history" not in st.session_state:
 try:
     genai.configure(api_key = st.session_state.app_key)
 except AttributeError as e:
-    st.warning("Please Put Your Gemini API Key First")
+    st.warning("Please Put Your API Key First")
 
 model = genai.GenerativeModel("gemini-pro")
 chat = model.start_chat(history = st.session_state.history)
